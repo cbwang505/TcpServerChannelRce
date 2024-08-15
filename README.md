@@ -392,6 +392,8 @@ public string xamlrcepayload(int asm_index)
 
 以下是笔者工具运行的效果,如图:
 
+![查看大图](img/ChannelRceFixed.gif)
+
 ##  相关引用 ##
 
 [James Forshaw文章](https://www.tiraniddo.dev/2019/10/bypassing-low-type-filter-in-net.html)
