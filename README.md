@@ -1,0 +1,2 @@
+# TcpServerChannelRce
+一款基于James Forshaw的.NET Remoting反序列化工具升级版在TypeFilterLevel.Low模式无文件payload任意代码执行poc的开发心得
