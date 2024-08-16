@@ -1,6 +1,6 @@
 ## 引用 ##
 
->这篇文章的目的是介绍一款基于James Forshaw的.NET Remoting反序列化工具升级版在TypeFilterLevel.Low模式无文件payload任意代码执行poc的开发心得
+>这篇文章的目的是介绍一款基于James Forshaw的.NET Remoting反序列化工具升级版在TcpServerChannel的TypeFilterLevel.Low模式无文件payload任意代码执行poc的开发心得
 
 [toc]
 
@@ -18,8 +18,11 @@
 其中不同协议用处不同：
 
 IpcChannel用于本机之间进程传输基于命名管道，使用ipc协议传输比HTTP、TCP速度要快的多，但是只能在本机传输，不能跨机器，本文不讲。
+
 TcpChannel基于tcp传输，将对象进行二进制序列化之后传输二进制数据流，比http传输效率更高。
+
 HttpChannel基于http传输，将对象进行soap序列化之后在网络中传输xml，兼容性更强。
+
 
 ## .NET Remoting的应用程序利用场景介绍 ## 
 
@@ -392,7 +395,7 @@ public string xamlrcepayload(int asm_index)
 
 以下是笔者工具运行的效果,如图:
 
-![查看大图](img/ChannelRceFixed.gif)
+![查看大图](img/ChannelRce.gif)
 
 ##  相关引用 ##
 
