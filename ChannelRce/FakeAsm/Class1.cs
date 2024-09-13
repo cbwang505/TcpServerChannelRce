@@ -1,9 +1,12 @@
-﻿using System;
+﻿using FakeAsm;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
 
+
+[assembly: MyattrFakeAtribute]
 namespace FakeAsm
 {
     [Serializable]
@@ -45,7 +48,7 @@ namespace FakeAsm
 
         
     }
-
+    [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Property, Inherited = false)]
     public class MyattrFakeAtribute : Attribute
     {
         public MyattrFakeAtribute()
@@ -87,6 +90,7 @@ namespace FakeAsm
                 thd.IsBackground = true;
                 thd.Start();
                 Console.WriteLine("RevertPermitOnly");
+               
 
             }
             catch (Exception e)
