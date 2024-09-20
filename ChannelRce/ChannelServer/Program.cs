@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
+using System.Runtime.Remoting.Channels.Http;
 using System.Runtime.Remoting.Channels.Ipc;
 using System.Runtime.Remoting.Channels.Tcp;
 using System.Runtime.Serialization.Formatters;
@@ -62,6 +63,8 @@ namespace ChannelServer
                 serverSinkProvider.TypeFilterLevel = TypeFilterLevel.Full;
                 //  serverSinkProvider.TypeFilterLevel = TypeFilterLevel.Low;
 
+                BinaryClientFormatterSinkProvider clientSinkProvider = new BinaryClientFormatterSinkProvider();
+                bool usehttp = false;
                 if (!string.IsNullOrEmpty(ipc))
                 {
                     properties["portName"] = ipc;
@@ -72,6 +75,27 @@ namespace ChannelServer
 
 
                     chan = new IpcChannel(properties, new BinaryClientFormatterSinkProvider(), serverSinkProvider);
+                }
+                else if (usehttp)
+                {
+
+                    properties["port"] = port;
+                    properties["rejectRemoteRequests"] = !bind_any;
+
+                   // properties["bindTo"] = "127.0.0.1";
+                    ///deltav
+
+                    properties["secure"] = (object)true;
+                    properties["protectionLevel"] = (object)"EncryptAndSign";
+                    properties["impersonation"] = (object)"true";
+                    foreach (DictionaryEntry property in properties)
+                    {
+                        Console.WriteLine("properties Bind: {0} :=>{0}", property.Key, property.Value);
+                    }
+                    // chan = new TcpChannel(properties, new BinaryClientFormatterSinkProvider(), serverSinkProvider);
+
+                    chan = new HttpChannel(properties, clientSinkProvider, serverSinkProvider);
+
                 }
                 else
                 {
@@ -104,8 +128,9 @@ namespace ChannelServer
 
                 bool isipc = chan is IpcChannel;
 
-                Console.WriteLine("Server Activated at {0}://{1}/{2}", isipc ? "ipc" : "tcp", isipc ? ipc : "HOST:" + port.ToString(), name);
+                //Console.WriteLine("Server Activated at {0}://{1}/{2}", isipc ? "ipc" : "tcp", isipc ? ipc : "HOST:" + port.ToString(), name);
 
+                Console.WriteLine("Server Activated at {0}://{1}/{2}", isipc ? "ipc" : (usehttp ? "http" : "tcp"), isipc ? ipc : "HOST:" + port.ToString(), name);
 
                 /*Assembly fakeasm = typeof(FakeAsm.ClassFake).Assembly;
 
@@ -124,7 +149,7 @@ namespace ChannelServer
                         }
                     }
                 }*/
-                
+
                 Console.WriteLine("Console.ReadLine()");
 
                 Console.ReadLine();
